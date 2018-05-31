@@ -4,7 +4,7 @@ const electron = require("electron");
 const path = require("path");
 const reload = require("electron-reload");
 const isDev = require("electron-is-dev");
-const { app, BrowserWindow } = electron;
+const { app, BrowserWindow, ipcMain, dialog } = electron;
 let mainWindow = null;
 
 if (isDev) {
@@ -21,6 +21,9 @@ app.on( "window-all-closed", () => {
 app.on( "ready", () => {
     mainWindow = new BrowserWindow( { width: 1000, height: 600, show: false } );
     mainWindow.loadURL( `file://${ __dirname }/index.html` );
+    if(isDev){
+        mainWindow.webContents.openDevTools({mode:'detach'});
+    }
     mainWindow.once( "ready-to-show", () => {
         mainWindow.show();
     } );
@@ -28,3 +31,18 @@ app.on( "ready", () => {
         mainWindow = null;
     } );
 } );
+
+ipcMain.on( "show-dialog", ( e, arg ) => {
+    const msgInfo = {
+        title: "My App Alert",
+        message: arg.message,
+        buttons: [ "OK" ]
+    };
+    dialog.showMessageBox( msgInfo );
+    e.sender.send('asynchronous-reply', 'piping hot');
+} );
+
+ipcMain.on('synchronous-message', (event, arg) => {
+    console.log("yo----> " + arg) // prints "ping"
+    event.returnValue = 'pong'
+  })
